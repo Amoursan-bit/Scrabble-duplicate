@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14261e">
+<title>Duplicate, entraînement</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<div id="hm"><div class="hb">
+<h1 id="hl"></h1><div class="sub">Entraîne-toi comme en compétition</div>
+<div id="rs"></div>
+<h2>Nouvelle partie</h2>
+<select id="g" aria-label="Choisir une partie"></select>
+<p>Minuteur par coup, il démarre quand tu commences.</p>
+<div class="tm" id="tb"></div>
+<button class="go" id="gs">Commencer</button>
+<button class="go" id="rd">🎲 Partie aléatoire</button>
+<label class="imp">Importer des parties (.txt ou .pdf)<input type="file" id="f" accept=".txt,.pdf" multiple hidden></label>
+<div id="im"></div>
+</div></div>
+<div id="app" hidden>
+<header><button id="mn">Menu</button><button id="pb">⏸ Pause</button><b id="gt"></b></header>
+<div class="bar"><span id="st"></span><span id="tm"></span><span id="sc"></span></div>
+<div id="pg"><i></i></div>
+<div id="bd"></div>
+<div id="lv"></div>
+<div class="rack" id="ra"></div>
+<div id="ac"></div>
+<div id="ms"></div>
+</div>
+<div id="pz" hidden><div><h2>⏸ Pause</h2><p>Le temps est arrêté.</p><button class="go" id="rz">Reprendre</button></div></div>
+<script src="dict.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body></html>
