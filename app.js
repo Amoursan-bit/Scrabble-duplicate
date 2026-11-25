@@ -18,7 +18,7 @@ const prem=(r,c)=>PR[Math.min(r,14-r)][c];
 const CL={W:'a',w:'b',t:'c',l:'d','.':'e'},LB={W:'MT',w:'MD',t:'LT',l:'LD','.':''};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const ld=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
-const mk=(n,rows)=>({name:n,draws:rows.filter(r=>r[0]).map(r=>r[0]),tops:rows.slice(1).map(r=>({w:r[1],ref:r[2],pts:r[3]}))});
+const mk=(n,rows)=>({name:n,r:rows,draws:rows.filter(r=>r[0]).map(r=>r[0]),tops:rows.slice(1).map(r=>({w:r[1],ref:r[2],pts:r[3]}))});
 let D='',TL=ld('sd:tl'),end=0,iv=0,live=0,paused=0,warned=0,lf=0,AC;if(TL==null)TL=180;
 let GAMES=DATA.concat(ld('sd:imp')||[]).map(g=>mk(g.n,g.r)),G,i,board,rack,sel,pend,tot,shown,err='';
 (async()=>{try{const b=Uint8Array.from(atob(DICT),c=>c.charCodeAt(0));D='\n'+(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text()).trim()+'\n'}catch(e){D=''}})();
@@ -125,6 +125,7 @@ document.addEventListener('click',e=>{
  if(t.dataset.t!==undefined){TL=+t.dataset.t;sv('sd:tl',TL);tbr()}
  else if(t.id==='gs')start(+$('g').value)
  else if(t.id==='gc')resume()
+ else if(t.id==='ex')exportG()
  else if(t.id==='rd')rnd()
  else if(t.id==='pb')pause()
  else if(t.id==='rz')unpause()
@@ -200,6 +201,14 @@ $('dx').addEventListener('click',()=>{$('dc').hidden=true});
 $('dq').addEventListener('input',()=>{clearTimeout(dt);dt=setTimeout(look,350)});
 $('dq').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(dt);look()}});
 
+/* 4c. Parties partagées : parties.json (dans le dépôt GitHub) est lu au démarrage par tous les téléphones */
+function exportG(){const L=GAMES.slice(DATA.length).map(g=>({n:g.name,r:g.r}));
+ if(!L.length){$('im').innerHTML='<span class="err">Aucune partie importée à exporter.</span>';return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(L)],{type:'application/json'}));a.download='parties.json';document.body.appendChild(a);a.click();a.remove();
+ $('im').innerHTML=`✅ ${L.length} parties exportées dans parties.json (dossier Téléchargements).`}
+fetch('parties.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(L=>{let a=0;
+ for(const g of L)if(!GAMES.some(x=>x.name===g.n)&&okGame(norm(g.r))){GAMES.push(mk(g.n,g.r));a++}
+ if(a){fill();if(!live)home()}}).catch(()=>{});
 home();
 
 /* 5. Service worker : permet d'utiliser l'appli sans connexion */
