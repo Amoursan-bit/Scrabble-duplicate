@@ -70,10 +70,10 @@ function render(){
  {const c=!shown&&Object.keys(pend).length?calc():null;$('lv').innerHTML=c?(c.e?'<small>…</small>':`<b>${c.raw}</b> pts <small>${c.txt}</small>`):''}
  let m='';
  if(i>=n){const p=Math.round(tot.me/tot.top*100);m=`<b>Partie terminée</b><br>Toi ${tot.me}, top ${tot.top}, soit ${p} % du top.`}
- else if(shown){const a=shown.r,t=shown.top,bd=a.bad&&a.bad.length;m=`<div class="rc ${bd?'bd':a.t===t.pts?'ok':'gp'}"><b>Toi : ${a.t} pts</b> ${a.txt?'('+a.txt+')':'(passé)'}${a.to?' ⏱ temps écoulé':''}<br><b>Top : ${t.pts} pts</b>, ${t.w} en ${t.ref}<br>${bd?'❌ Absent de la liste : '+a.bad.join(', ')+' (0 pt)<br><small>Liste ODS 8 : il peut manquer des mots récents.</small>':a.t===t.pts?'✅ Top trouvé !':a.t>t.pts?'🤔 Plus que le top : vérifie ce mot dans l’ODS 9':'Il t’a manqué '+(t.pts-a.t)+' pts'}${a.nod?'<br><small>Dictionnaire indisponible : mots non vérifiés.</small>':''}<br>Total : ${Math.round(tot.me/tot.top*100)} %</div>`}
+ else if(shown){const a=shown.r,t=shown.top,bd=a.bad&&a.bad.length;m=`<div class="rc ${bd?'bd':a.t===t.pts?'ok':'gp'}"><b>Toi : ${a.t} pts</b> ${a.txt?'('+a.txt+')':'(passé)'}${a.to?' ⏱ temps écoulé':''}<br><b>Top : ${t.pts} pts</b>, ${t.w} en ${t.ref}<br>${bd?'❌ Absent de la liste : '+a.bad.join(', ')+' (0 pt)<br><small>Liste ODS 8 : il peut manquer des mots récents.</small>':a.t===t.pts?'✅ Top trouvé !':a.t>t.pts?'🤔 Plus que le top : vérifie ce mot dans l’ODS 9':'Il t’a manqué '+(t.pts-a.t)+' pts'}${a.nod?'<br><small>Dictionnaire indisponible : mots non vérifiés.</small>':''}<br>Total : ${Math.round(tot.me/tot.top*100)} %<div id="df"></div></div>`}
  else if(err)m=`<span class="err">${err}</span>`;
  else m='Touche une lettre du chevalet, puis une case de la grille.';
- $('ms').innerHTML=m;
+ $('ms').innerHTML=m;if(shown&&i<n)showDefs();
  $('ac').innerHTML=i>=n?'<button class="go" id="ng">Partie suivante</button><button id="rn">🎲 Aléatoire</button><button id="rj">Rejouer</button>':shown?'<button class="go" id="nx">Coup suivant</button>':'<button class="go" id="ok">Valider</button><button id="bk">Rappeler</button><button id="sh">Mélanger</button><button id="ps">Passer</button>';
 }
 function back(){Object.values(pend).forEach(v=>rack[v.k].u=0);pend={};sel=null}
@@ -168,6 +168,38 @@ $('f').onchange=async e=>{const bad=[];let ok=0,dup=0,pr=0;
   else{ok++;GAMES.push(mk(nm,rows));const im=ld('sd:imp')||[];im.push({n:nm,r:rows});sv('sd:imp',im)}}
  fill();$('g').value=GAMES.length-1;
  $('im').innerHTML=(ok?`✅ ${ok} partie${ok>1?'s':''} ajoutée${ok>1?'s':''}.<br>`:'')+(dup?`ℹ️ ${dup} déjà dans la liste.<br>`:'')+(bad.length?`<span class="err">❌ Non reconnu : ${bad.slice(0,4).join(', ')}${bad.length>4?' et '+(bad.length-4)+' autres':''}.<br>Il faut un .txt DupliTop ou un PDF avec du texte (pas un scan).</span>`:'');e.target.value=''};
+/* 4b. Dictionnaire : vérification des mots et définitions (Wiktionnaire) */
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const WK='https://fr.wiktionary.org/w/api.php?action=parse&prop=text&format=json&origin=*&redirects=1&disableeditsection=1&disablelimitreport=1&page=';
+function extr(h){const d=new DOMParser().parseFromString(h,'text/html'),a=d.getElementById('fr');if(!a)return[];
+ const out=[];let nat='',n=a.closest('.mw-heading')||a.closest('h2')||a;
+ for(n=n.nextElementSibling;n&&n.tagName!=='H2'&&!n.classList.contains('mw-heading2');n=n.nextElementSibling){
+  const hd=/^H[34]$/.test(n.tagName)?n:n.classList.contains('mw-heading')?n.querySelector('h3,h4'):null;
+  if(hd)nat=hd.textContent.trim().replace(/\s*\d+$/,'');
+  if(n.tagName==='OL')[...n.children].forEach(li=>{const c=li.cloneNode(true);c.querySelectorAll('ul,dl,ol').forEach(x=>x.remove());
+   const t=c.textContent.replace(/\s+/g,' ').trim();if(t&&out.length<4)out.push({n:nat,t:t.slice(0,220)})})}
+ return out}
+async function def(w){const k='sd:def:'+w,c=ld(k);if(c)return c;let j;
+ try{j=await(await fetch(WK+encodeURIComponent(w.toLowerCase()))).json()}catch(e){return'off'}
+ const r=j&&j.parse?extr(j.parse.text['*']):[];sv(k,r);return r}
+const fmt=r=>r==='off'?'<small>Définition indisponible hors connexion.</small>':r.length?r.slice(0,3).map(x=>`<p><i>${esc(x.n)}</i> ${esc(x.t)}</p>`).join('')+'<small>Source : Wiktionnaire (CC BY-SA)</small>':'<small>Pas de définition trouvée dans le Wiktionnaire.</small>';
+const cl=s=>nb(s).replace(/[^A-Z]/g,'');
+async function look(){const w=cl($('dq').value);if(w.length<2){$('dr').innerHTML='';return}
+ const v=D?D.includes('\n'+w+'\n'):null;
+ $('dr').innerHTML=`<div class="${v?'ok':'no'}"><b>${w}</b> ${v==null?'dictionnaire en chargement…':v?'✅ mot valide (ODS 8)':'❌ absent de la liste ODS 8'}</div>`+(v===false?'<small>Un mot récent (ODS 9) peut manquer à cette liste.</small>':'<div id="dd"></div>');
+ if(!v)return;$('dd').innerHTML='<small>Définition…</small>';
+ const r=await def(w);if($('dd')&&cl($('dq').value)===w)$('dd').innerHTML=fmt(r)}
+async function showDefs(){const s=shown;if(!s||!$('df'))return;
+ const ws=[...new Set([cl(s.top.w),...(s.r.bad&&s.r.bad.length?[]:(s.r.txt||'').split(', '))].filter(x=>x.length>1))].slice(0,3);
+ $('df').innerHTML='<small>Définitions…</small>';
+ const h=await Promise.all(ws.map(async w=>{const r=await def(w);return`<p><b>${w}</b> ${r==='off'?'<small>hors connexion</small>':r.length?`<i>${esc(r[0].n)}</i> ${esc(r[0].t)}`:'<small>pas de définition</small>'}</p>`}));
+ if(shown===s&&$('df'))$('df').innerHTML=h.join('')}
+let dt=0;
+$('dk').addEventListener('click',()=>{const o=$('dc').hidden;$('dc').hidden=!o;if(o)setTimeout(()=>$('dq').focus(),60)});
+$('dx').addEventListener('click',()=>{$('dc').hidden=true});
+$('dq').addEventListener('input',()=>{clearTimeout(dt);dt=setTimeout(look,350)});
+$('dq').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(dt);look()}});
+
 home();
 
 /* 5. Service worker : permet d'utiliser l'appli sans connexion */

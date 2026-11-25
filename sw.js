@@ -8,7 +8,7 @@
    Pour publier une nouvelle version : change le numéro dans CACHE.
    Les téléphones récupèrent alors les nouveaux fichiers.
    ============================================================ */
-const CACHE = 'duplicate-v1';
+const CACHE = 'duplicate-v2';
 const FICHIERS = [
   './', 'index.html', 'style.css', 'app.js', 'data.js', 'dict.js',
   'pdf.min.js', 'pdf.worker.min.js', 'manifest.webmanifest',
